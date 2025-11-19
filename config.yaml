@@ -16,6 +16,8 @@ config:
   mappings: 
     - job_type: "command"
       template_name: "control-m-command-to-airflow-bash"
+    - job_type: "Job"
+      template_name: "control-m-job-to-airflow-ssh"
     #- job_type: "command"
     #  template_name: "control-m-command-to-airflow-ssh"
     #- job_type: "command"
@@ -32,4 +34,3 @@ config:
       template_name: "automic-dummy-to-airflow-dummy"
     - job_type: "JOBP"
       template_name: "automic-dummy-to-airflow-dummy"
-      
