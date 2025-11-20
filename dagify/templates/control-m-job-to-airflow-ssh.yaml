@@ -52,10 +52,12 @@ mappings:
     target: script_path
     rules:
       - rule: escape_quotes
+      - rule: env_var_to_python
   - source: MEMNAME
     target: script_name
     rules:
       - rule: escape_quotes
+      - rule: env_var_to_python
   - source: RUN_AS
     target: ssh_conn_id
     rules:
@@ -64,7 +66,7 @@ structure: |
   {task_id} = SSHOperator(
     task_id="{task_id}",
     ssh_conn_id="{ssh_conn_id}",
-    command="{script_path}/{script_name}" if "{script_path}" and "{script_name}" else "/tmp/dummy.sh",
+    command=f"{script_path}/{script_name}",
     trigger_rule="{trigger_rule}",
     dag=dag,
   )

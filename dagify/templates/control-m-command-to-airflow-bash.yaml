@@ -47,17 +47,16 @@ mappings:
   - source: JOBNAME
     target: task_id
     rules:
-      - rule: python_variable_safe  
+      - rule: python_variable_safe
   - source: CMDLINE
     target: command
     rules:
       - rule: escape_quotes
+      - rule: env_var_to_python
 structure: |
   {task_id} = BashOperator(
     task_id="{task_id}",
-    bash_command="{command}",
+    bash_command=f"{command}",
     trigger_rule="{trigger_rule}",
     dag=dag,
   )
-
-

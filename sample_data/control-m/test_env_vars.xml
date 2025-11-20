@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFTABLE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="Scheduler.xsd">
+  <FOLDER DATACENTER="DC1" FOLDER_NAME="TEST_ENV_VARS" FOLDER_ORDER_METHOD="SYSTEM">
+    <JOB APPLICATION="TEST" DATACENTER="DC1" JOBNAME="test_env_var_job" JOBTYPE="Job" TASKTYPE="Job" MEMNAME="%%G_COMMON_SCRIPT_HOME/fw-SFTX.sh" NODEID="it04bil" RUN_AS="it04bil" SUB_APPLICATION="ENV_VARS">
+      <DESCRIPTION>Test job with environment variables</DESCRIPTION>
+      <INCOND NAME="test_env_var_job-TO-test_env_var_job2" ODATE="ODAT" SIGN="+" />
+    </JOB>
+    <JOB APPLICATION="TEST" CMDLINE="ctmfw '%%G_DATA_HOME_PREFIX.bil/exf/data/inbox/%%L_BILL_EC_FP_SUB_NS/%%L_BILL_EC_FP_PAT_LOW' CREATE 0 600 10 3 1380" DATACENTER="DC1" JOBNAME="test_env_var_job2" JOBTYPE="Command" TASKTYPE="Command" NODEID="it04bil" SUB_APPLICATION="ENV_VARS">
+      <DESCRIPTION>Test command job with environment variables</DESCRIPTION>
+    </JOB>
+  </FOLDER>
+</DEFTABLE>

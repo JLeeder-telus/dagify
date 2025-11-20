@@ -16,6 +16,7 @@ import codecs
 import pandas as pd
 import random
 import uuid
+import re
 
 
 class Rule:
@@ -109,3 +110,38 @@ class Rule:
         print(df)
 
         return vals[0]
+        
+    def rule_env_var_to_python(self, vals):
+        """
+        Converts Control-M environment variables (prefixed with %%) to Python os.environ.get() calls.
+        Example: %%G_COMMON_SCRIPT_HOME -> os.environ.get('G_COMMON_SCRIPT_HOME')
+        
+        If the input string contains multiple environment variables or is part of a larger string,
+        it will replace all occurrences with os.environ.get() calls directly in the string.
+        """
+        print(f"Info: Rule Environment Variable to Python: {vals[0]}")
+        
+        # If input is None, return None
+        if vals[0] is None:
+            return None
+            
+        # Check if the string contains any environment variables
+        if '%%' not in vals[0]:
+            return vals[0]
+            
+        # Find all environment variables in the string
+        env_vars = re.findall(r'%%([A-Za-z0-9_]+)', vals[0])
+        
+        if not env_vars:
+            return vals[0]
+            
+        # Replace each environment variable with os.environ.get() call
+        result = vals[0]
+        for var in env_vars:
+            result = result.replace(f'%%{var}', f"' + os.environ.get('{var}', '') + '")
+            
+        # If the entire string was replaced, remove the extra quotes
+        if result.startswith("' + ") and result.endswith(" + '"):
+            result = result[4:-4]
+            
+        return result

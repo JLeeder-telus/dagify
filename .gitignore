@@ -21,3 +21,4 @@ venv/
 .env.local
 static/assets/.DS_Store
 .gitignore
+/test_output/*.py

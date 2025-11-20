@@ -295,6 +295,7 @@ def generate_airflow_dags(object, task_name):
 
 def set_baseline_imports(object):
     object.baseline_imports = [
+        "import os",
         "from airflow import DAG",
         "from airflow.decorators import task",
         "from airflow.sensors.external_task import ExternalTaskMarker",
