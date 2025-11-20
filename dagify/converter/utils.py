@@ -301,7 +301,12 @@ def get_jobtypes_andcount(source_path):
         with open(source_path, 'r') as file:
             data = yaml.safe_load(file)
         for mapping in data['config']['mappings']:
-            job_types_source.append(mapping['job_type'])
+            # Check if the mapping has a 'job_type' key
+            if 'job_type' in mapping:
+                job_types_source.append(mapping['job_type'])
+            # If not, check if it has an 'appl_type' key
+            elif 'appl_type' in mapping:
+                job_types_source.append(mapping['appl_type'])
 
         # Convert all to lowercase for comparision
         job_types_source = [item.lower() for item in job_types_source]

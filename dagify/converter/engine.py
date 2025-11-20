@@ -41,9 +41,10 @@ def load_config(object):
     # Modify Configration for Standardization:
     templatesToValidate = []
     for idx, config in enumerate(object.config["config"]["mappings"]):
-        # Set Command Uppercase
-        object.config["config"]["mappings"][idx]["job_type"] = \
-            object.config["config"]["mappings"][idx]["job_type"].upper()
+        # Set Command Uppercase if job_type exists
+        if "job_type" in object.config["config"]["mappings"][idx]:
+            object.config["config"]["mappings"][idx]["job_type"] = \
+                object.config["config"]["mappings"][idx]["job_type"].upper()
         templatesToValidate.append(object.config["config"]["mappings"][idx]["template_name"])
 
     for root, dirs, files in os.walk(object.templates_path):
@@ -185,9 +186,23 @@ def get_template(object, template_name, tool):
     return template
 
 def get_template_name(object, job_type):
+    # First check for job_type mappings
     for mapping in object.config["config"]["mappings"]:
-        if mapping["job_type"] == job_type.upper():
+        if "job_type" in mapping and mapping["job_type"] == job_type.upper():
             return mapping["template_name"]
+    
+    # If no job_type match, check for appl_type mappings
+    task_appl_type = None
+    for task in object.uf.get_tasks():
+        if task.get_attribute("TASKTYPE") == job_type:
+            task_appl_type = task.get_attribute("APPL_TYPE")
+            break
+    
+    if task_appl_type:
+        for mapping in object.config["config"]["mappings"]:
+            if "appl_type" in mapping and mapping["appl_type"] == task_appl_type:
+                return mapping["template_name"]
+    
     # no match found
     return None
 

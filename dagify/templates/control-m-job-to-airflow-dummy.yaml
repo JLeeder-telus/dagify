@@ -13,18 +13,18 @@
 # limitations under the License.
 --- 
 metadata:
-  id: 0005
-  name: control-m-job-to-airflow-ssh
+  id: 0004
+  name: control-m-job-to-airflow-dummy
   version: "v0.0.1"
   author:
     name: "TELUS"
     email: "dagify-telus@telus.com"
-  description-short: "Control-M Job to Airflow SSH Operator"
-  description: "This template allows for the conversion of Control-M Jobs of type Job into the native Apache Airflow SSH operator format."
+  description-short: "Control-M Job to Airflow Dummy Operator"
+  description: "This template allows for the conversion of Control-M Jobs of type Job with missing fields into the Airflow Dummy operator format."
   tags:
     - control-m
     - airflow
-    - ssh
+    - dummy
 source:
   platform: 
     id: "CONTROLM"
@@ -36,35 +36,21 @@ target:
       id: "APACHEAIRFLOW"
       name: "Apache Airflow"
   operator: 
-      id: "SSHOperator"
-      name: "SSH Operator"
-      docs: "https://airflow.apache.org/docs/apache-airflow-providers-ssh/stable/_api/airflow/providers/ssh/operators/ssh/index.html#module-airflow.providers.ssh.operators.ssh"
+      id: "DummyOperator"
+      name: "Dummy Operator"
+      docs: "https://airflow.apache.org/docs/apache-airflow/2.2.4/_api/airflow/operators/dummy/index.html"
       imports: 
-        - package: "airflow.providers.ssh.operators.ssh"
+        - package: "airflow.operators.dummy"
           imports:
-              - "SSHOperator"
+              - "DummyOperator"
 mappings:
   - source: JOBNAME
     target: task_id
     rules:
       - rule: python_variable_safe
-  - source: MEMLIB
-    target: script_path
-    rules:
-      - rule: escape_quotes
-  - source: MEMNAME
-    target: script_name
-    rules:
-      - rule: escape_quotes
-  - source: RUN_AS
-    target: ssh_conn_id
-    rules:
-      - rule: escape_quotes
 structure: |
-  {task_id} = SSHOperator(
+  {task_id} = DummyOperator(
     task_id="{task_id}",
-    ssh_conn_id="{ssh_conn_id}",
-    command="{script_path}/{script_name}" if "{script_path}" and "{script_name}" else "/tmp/dummy.sh",
     trigger_rule="{trigger_rule}",
     dag=dag,
   )

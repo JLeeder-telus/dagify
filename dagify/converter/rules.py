@@ -74,6 +74,9 @@ class Rule:
 
     def rule_escape_quotes(self, vals):
         print(f"Info: Rule Escape Quotes: {vals[0]}")
+        # Check if vals[0] is None before trying to iterate over it
+        if vals[0] is None:
+            return vals[0]
         for char in ["'", '"', "`"]:
             if char in vals[0]:
                 vals = self.rule_replace([vals[0], char, f"\\{char}"])

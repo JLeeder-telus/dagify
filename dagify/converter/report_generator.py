@@ -52,7 +52,7 @@ class Report():
         self.output_path = f"{output_path}/{source_xml_name}"
         self.templates_path = templates_path
         self.dag_divider = dag_divider
-        self.uf = load_source(self.source_path)
+        self.uf = load_source(self.source_path, "controlm")
         # Run the Proccess
         self.write_report()
 
@@ -118,8 +118,10 @@ class Report():
             except yaml.YAMLError as exc:
                 raise exc
         for idx, config in enumerate(self.config["config"]["mappings"]):
-            self.config["config"]["mappings"][idx]["job_type"] = \
-                self.config["config"]["mappings"][idx]["job_type"].upper()
+            # Check if the mapping has a 'job_type' key
+            if 'job_type' in self.config["config"]["mappings"][idx]:
+                self.config["config"]["mappings"][idx]["job_type"] = \
+                    self.config["config"]["mappings"][idx]["job_type"].upper()
             templates_to_validate.append(self.config["config"]["mappings"][idx]["template_name"])
 
         # Get job related info

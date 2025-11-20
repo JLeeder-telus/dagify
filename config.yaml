@@ -18,6 +18,8 @@ config:
       template_name: "control-m-command-to-airflow-bash"
     - job_type: "Job"
       template_name: "control-m-job-to-airflow-ssh"
+    - appl_type: "FileWatch"
+      template_name: "control-m-job-to-airflow-dummy"
     #- job_type: "command"
     #  template_name: "control-m-command-to-airflow-ssh"
     #- job_type: "command"
