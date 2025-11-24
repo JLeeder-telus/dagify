@@ -14,16 +14,17 @@ DAGify is currently in a stable state with core functionality for converting Con
 
 Recent development has focused on:
 
-1. **Control-M Job Template**: Created a new template to convert Control-M jobs with TASKTYPE="Job" to Airflow SSHOperator
-2. **Proxy Configuration**: Added documentation for TELUS network proxy requirements
-3. **PowerShell Syntax**: Documented PowerShell syntax requirements for Windows environments
-4. **VM Setup Guide**: Created a comprehensive guide for setting up DAGify on a GCP VM
-5. **Airflow Integration**: Fixed Pylance warnings by properly installing Apache Airflow dependencies
-6. **Automic Support**: Initial implementation of support for Automic job definitions
-7. **Web UI Improvements**: Enhanced user experience in the web interface
-8. **Report Generation**: More comprehensive reporting capabilities
-9. **Docker Integration**: Improved containerization for easier deployment
-10. **Documentation**: Better documentation of usage patterns and extension points
+1. **Environment Variable Handling**: Enhanced the `rule_env_var_to_python` method to properly handle Control-M environment variables in Python code, including special handling for variables ending with `_prefix` followed by a period
+2. **Control-M Job Template**: Updated the template to convert Control-M jobs with TASKTYPE="Job" to Airflow SSHOperator with proper f-string formatting for environment variables
+3. **Proxy Configuration**: Enhanced documentation for TELUS network proxy requirements, adding explicit instructions for Cline to run proxy configuration commands when starting a new terminal
+4. **PowerShell Syntax**: Documented PowerShell syntax requirements for Windows environments
+5. **VM Setup Guide**: Created a comprehensive guide for setting up DAGify on a GCP VM
+6. **Airflow Integration**: Fixed Pylance warnings by properly installing Apache Airflow dependencies
+7. **Automic Support**: Initial implementation of support for Automic job definitions
+8. **Web UI Improvements**: Enhanced user experience in the web interface
+9. **Report Generation**: More comprehensive reporting capabilities
+10. **Docker Integration**: Improved containerization for easier deployment
+11. **Documentation**: Better documentation of usage patterns and extension points
 
 ## Current Challenges
 
@@ -49,12 +50,12 @@ Several key decisions are currently being considered or have recently been made:
 
 The immediate roadmap includes:
 
-1. **Template Enhancement**: Enhance the Control-M Job to SSHOperator template to handle parameters and environment variables
-2. **Template Expansion**: Develop additional templates for other common job types
-3. **Automic Support Enhancement**: Improve and expand support for Automic
-4. **Documentation Improvement**: Create more comprehensive documentation
-5. **Error Handling**: Enhance error reporting and recovery
-6. **Performance Optimization**: Optimize memory usage for large files
+1. **Template Expansion**: Develop additional templates for other common job types
+2. **Automic Support Enhancement**: Improve and expand support for Automic
+3. **Documentation Improvement**: Create more comprehensive documentation
+4. **Error Handling**: Enhance error reporting and recovery
+5. **Performance Optimization**: Optimize memory usage for large files
+6. **Parameter Handling**: Enhance parameter handling in templates
 
 ## Current Limitations
 

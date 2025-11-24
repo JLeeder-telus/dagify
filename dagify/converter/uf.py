@@ -295,6 +295,13 @@ class UFTask(UF):
     def add_dependent_task(self, dag_name, task_name):
         self.dep_tasks.append({"dag_name": dag_name, "task_name": task_name})
         return
+        
+    def set_env_vars(self, env_vars):
+        self.env_vars = env_vars
+        return
+        
+    def get_env_vars(self):
+        return getattr(self, 'env_vars', [])
 
 
 class UFTaskVariable(UFTask):

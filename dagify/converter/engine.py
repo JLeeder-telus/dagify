@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import yamale
 from .yaml_validator.custom_validator import validators
 import yaml
@@ -277,6 +278,22 @@ def generate_airflow_dags(object, task_name):
         # Create DAG File by Folder
         filename = f"{object.output_path}/{dag_divider_value}.py"
 
+        # Collect all environment variables from tasks in this DAG
+        all_env_vars = []
+        for task in object.uf.get_tasks():
+            if task.get_attribute(object.dag_divider) == dag_divider_value:
+                env_vars = task.get_env_vars()
+                if env_vars:
+                    all_env_vars.extend(env_vars)
+        
+        # Remove duplicates while preserving order
+        unique_env_vars = []
+        seen_vars = set()
+        for var in all_env_vars:
+            if var['env_var'] not in seen_vars:
+                unique_env_vars.append(var)
+                seen_vars.add(var['env_var'])
+        
         content = template.render(
             baseline_imports=get_baseline_imports(object),
             custom_imports=dag_python_imports,
@@ -285,7 +302,8 @@ def generate_airflow_dags(object, task_name):
             tasks=airflow_task_outputs,
             dependencies_int=dependencies_in_dag_internal,
             dependencies_ext=dependencies_in_dag_external,
-            upstream_dependencies=upstream_dependencies
+            upstream_dependencies=upstream_dependencies,
+            env_vars=unique_env_vars
         )
         with open(filename, mode="w", encoding="utf-8") as dag_file:
             content_linted = autopep8.fix_code(content)
@@ -319,6 +337,9 @@ def airflow_task_build(task, template):
 
     # Declare Output Values Dictionary
     values = {}
+    
+    # List to store environment variables
+    env_vars = []
 
     # Process each Mapping
     for mapping in template["mappings"]:
@@ -331,6 +352,9 @@ def airflow_task_build(task, template):
         # Load Target Value or Default Value for TargetKey from task source
         # field
         targetValue = task.get_attribute(mapping.get("source", ""))
+        
+        # Store the original value before applying rules
+        originalValue = targetValue
 
         # Apply Rules
         # TODO: Handle Rules through additional function
@@ -340,6 +364,21 @@ def airflow_task_build(task, template):
 
         if len(rules) == 0:
             print("No Rules applied to source during mapping")
+
+        # Check if env_var_to_python rule is in the rules
+        has_env_var_rule = any(rule.get('rule') == 'env_var_to_python' for rule in rules)
+        
+        # Extract environment variables if the original value contains them and the env_var_to_python rule is applied
+        if has_env_var_rule and originalValue and '%%' in originalValue:
+            # Find all environment variables in the string
+            found_env_vars = re.findall(r'%%([A-Za-z0-9_]+)', originalValue)
+            for var in found_env_vars:
+                # Convert to lowercase for Python variable naming convention
+                python_var = var.lower()
+                env_vars.append({
+                    'env_var': var,
+                    'python_var': python_var
+                })
 
         for rule in rules:
             print(f"Apply Rule {rule.get('rule')}")
@@ -368,6 +407,15 @@ def airflow_task_build(task, template):
         if in_condition.get_attribute("AND_OR") == 'O':
             trigger_rule =  'one_success'
     values["trigger_rule"] = trigger_rule
+    
+    # Store unique environment variables in the task
+    unique_env_vars = []
+    seen_vars = set()
+    for var in env_vars:
+        if var['env_var'] not in seen_vars:
+            unique_env_vars.append(var)
+            seen_vars.add(var['env_var'])
+    task.set_env_vars(unique_env_vars)
 
     # Construct Output Python Object Text
     output = template["structure"].format(**values)

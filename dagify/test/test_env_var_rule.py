@@ -42,22 +42,37 @@ def test_env_var_to_python():
             
             # Evaluate the result as a Python expression if possible
             try:
-                # For simple replacements
-                if result.startswith("os.environ.get("):
+                # For f-string format
+                if result.startswith("f\"") or result.startswith("f'"):
+                    # Set environment variables for testing
+                    os.environ['G_COMMON_SCRIPT_HOME'] = '/path/to/scripts'
+                    os.environ['G_DATA_HOME_PREFIX'] = '/data'
+                    os.environ['L_BILL_EC_FP_SUB_NS'] = 'subdir'
+                    os.environ['L_BILL_EC_FP_PAT_LOW'] = 'pattern'
+                    os.environ['VAR1'] = 'value1'
+                    os.environ['VAR2'] = 'value2'
+                    
+                    # Extract variable names from the f-string
+                    var_names = re.findall(r"{([^}]+)}", result)
+                    
+                    # Create a local dictionary with the variables
+                    local_vars = {}
+                    for var in var_names:
+                        env_var = var.upper()
+                        local_vars[var] = os.environ.get(env_var, '')
+                    
+                    # Evaluate the f-string
+                    eval_result = eval(result, {}, local_vars)
+                    print(f"Evaluated: {eval_result}")
+                elif result.startswith("os.environ.get("):
+                    # For backward compatibility with old format
                     eval_result = eval(result)
                     print(f"Evaluated: {eval_result}")
                 else:
-                    # For more complex strings with f-string syntax
-                    # Extract the parts between ' + os.environ.get(...) + '
-                    parts = re.findall(r"os\.environ\.get\('([^']+)'", result)
-                    eval_result = test_case
-                    for var in parts:
-                        eval_result = eval_result.replace(f"%%{var}", os.environ.get(var, ''))
-                    print(f"Evaluated: {eval_result}")
+                    # For strings without environment variables
+                    print(f"Evaluated: {result}")
             except Exception as e:
                 print(f"Error evaluating: {e}")
-    
-    print("\nTest completed.")
 
 if __name__ == "__main__":
     test_env_var_to_python()

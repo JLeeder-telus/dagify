@@ -18,6 +18,11 @@ with DAG(
     catchup=False,
 ) as dag:
 
+    # Get environment variables
+    {% for var in env_vars %}
+    {{ var.python_var }} = os.environ.get('{{ var.env_var }}', '')
+    {% endfor %}
+
     # DAG Tasks
     {%- for task in tasks %}
     {{task | indent(4)}}

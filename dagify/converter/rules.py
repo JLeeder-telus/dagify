@@ -113,11 +113,23 @@ class Rule:
         
     def rule_env_var_to_python(self, vals):
         """
-        Converts Control-M environment variables (prefixed with %%) to Python os.environ.get() calls.
-        Example: %%G_COMMON_SCRIPT_HOME -> os.environ.get('G_COMMON_SCRIPT_HOME')
+        Converts Control-M environment variables (prefixed with %%) to Python variables.
         
-        If the input string contains multiple environment variables or is part of a larger string,
-        it will replace all occurrences with os.environ.get() calls directly in the string.
+        This rule extracts environment variables from the input string and formats them
+        to be defined at the DAG level using os.environ.get(), then referenced in the
+        operator commands using Python variables.
+        
+        Example: 
+        Input: %%G_COMMON_SCRIPT_HOME/fw-SFTX.sh
+        Output: f"{g_common_script_home}/fw-SFTX.sh"
+        
+        Special handling for variables ending with _prefix:
+        Input: %%G_APP_HOME_PREFIX.omg/vpop/resources/job
+        Output: f"{g_app_home_prefix}omg/vpop/resources/job"
+        
+        The environment variable 'G_COMMON_SCRIPT_HOME' will be extracted and defined
+        at the DAG level as:
+        g_common_script_home = os.environ.get('G_COMMON_SCRIPT_HOME', '')
         """
         print(f"Info: Rule Environment Variable to Python: {vals[0]}")
         
@@ -134,14 +146,26 @@ class Rule:
         
         if not env_vars:
             return vals[0]
-            
-        # Replace each environment variable with os.environ.get() call
-        result = vals[0]
+        
+        # Create a dictionary to store environment variable names and their Python variable names
+        python_vars = {}
         for var in env_vars:
-            result = result.replace(f'%%{var}', f"' + os.environ.get('{var}', '') + '")
+            # Convert to lowercase for Python variable naming convention
+            python_var = var.lower()
+            python_vars[var] = python_var
             
-        # If the entire string was replaced, remove the extra quotes
-        if result.startswith("' + ") and result.endswith(" + '"):
-            result = result[4:-4]
+        # Replace each environment variable with its Python variable reference
+        result = vals[0]
+        for var, python_var in python_vars.items():
+            # Check if this is a _prefix variable followed by a period
+            if var.endswith('_PREFIX'):
+                # Replace the variable and remove the period that follows it
+                pattern = f'%%{var}\\.'
+                replacement = f"{{{python_var}}}"
+                result = re.sub(pattern, replacement, result)
+            else:
+                # Standard replacement for non-prefix variables
+                result = result.replace(f'%%{var}', f"{{{python_var}}}")
             
-        return result
+        # Return the result as an f-string
+        return f"{result}"

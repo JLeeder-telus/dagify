@@ -37,9 +37,10 @@ DAGify is currently in a stable, functional state with core capabilities for con
 - [x] **DAG Division**: Support for splitting workflows by folder, application, or sub-application
 - [x] **Scheduling Conversion**: Basic conversion of scheduling information
 - [x] **Rules Engine**: Field transformation through configurable rules
+- [x] **Environment Variable Handling**: Proper conversion of Control-M environment variables to Python code, including special handling for variables ending with `_prefix`
 - [x] **Template Validation**: Validation of template structure and content
 - [x] **Error Reporting**: Basic error reporting during conversion
-- [x] **Environment Documentation**: Documentation for proxy settings and PowerShell syntax
+- [x] **Environment Documentation**: Enhanced documentation for proxy settings and PowerShell syntax, including explicit instructions for Cline
 - [x] **VM Setup Guide**: Comprehensive guide for setting up DAGify on a GCP VM
 
 ## In Progress
@@ -103,7 +104,6 @@ DAGify is currently in a stable, functional state with core capabilities for con
 4. **Template Coverage**: Not all job types have corresponding templates
 5. **Error Messages**: Some error messages could be more descriptive
 6. **Template Validation**: Template validation can be strict about ID formats and values
-7. **Variable Handling**: Control-M variables in commands may need additional processing
 
 ## Success Metrics
 

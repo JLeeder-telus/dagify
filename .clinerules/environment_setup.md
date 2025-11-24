@@ -4,6 +4,11 @@
 
 When installing packages or accessing external resources, always set the proxy environment variables first. This is required for connectivity in the TELUS network environment.
 
+**IMPORTANT: When starting a new terminal, always run the following commands first:**
+```powershell
+$env:HTTPS_PROXY="http://webproxystatic-on.tsl.telus.com:8080"; $env:HTTP_PROXY="http://webproxystatic-on.tsl.telus.com:8080"
+```
+
 ### PowerShell Syntax
 
 Always use PowerShell syntax for terminal commands. PowerShell uses different syntax than bash/cmd for environment variables and command chaining.
