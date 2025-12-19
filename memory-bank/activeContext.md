@@ -14,17 +14,24 @@ DAGify is currently in a stable state with core functionality for converting Con
 
 Recent development has focused on:
 
-1. **Environment Variable Handling**: Enhanced the `rule_env_var_to_python` method to properly handle Control-M environment variables in Python code, including special handling for variables ending with `_prefix` followed by a period
-2. **Control-M Job Template**: Updated the template to convert Control-M jobs with TASKTYPE="Job" to Airflow SSHOperator with proper f-string formatting for environment variables
-3. **Proxy Configuration**: Enhanced documentation for TELUS network proxy requirements, adding explicit instructions for Cline to run proxy configuration commands when starting a new terminal
-4. **PowerShell Syntax**: Documented PowerShell syntax requirements for Windows environments
-5. **VM Setup Guide**: Created a comprehensive guide for setting up DAGify on a GCP VM
-6. **Airflow Integration**: Fixed Pylance warnings by properly installing Apache Airflow dependencies
-7. **Automic Support**: Initial implementation of support for Automic job definitions
-8. **Web UI Improvements**: Enhanced user experience in the web interface
-9. **Report Generation**: More comprehensive reporting capabilities
-10. **Docker Integration**: Improved containerization for easier deployment
-11. **Documentation**: Better documentation of usage patterns and extension points
+1. **Airflow Variable Integration**: Implemented support for loading g_ variables from Airflow Variable.get() instead of environment variables, making DAGs more configurable through the Airflow UI
+2. **Dynamic ORDERID Generation**: Added functionality to replace ORDERID variable with a datetime-based value (now.strftime("%Y%m%d%H%M%S")) for better runtime flexibility
+3. **Airflow 3.1 Compatibility**: Updated DAG template to use `schedule` instead of `schedule_interval` for compatibility with Airflow 3.1
+4. **Post-Processing Pipeline**: Created a post-processing script to replace Variable.get() calls with local variable references in bash_command strings, improving code readability and performance
+5. **Control-M Syntax Cleanup**: Added functionality to clean up Control-M concatenation syntax (periods used for concatenation) in the generated DAG files, ensuring proper Python syntax
+6. **DAG Owner from RUN_AS**: Added functionality to set the DAG owner from the RUN_AS attribute in the Control-M XML file, ensuring proper ownership in Airflow
+7. **DAG Queue from NODEID**: Added functionality to set the DAG queue based on the NODEID attribute in the Control-M XML file, with specific mapping rules for different server types
+5. **Environment Variable Handling**: Enhanced the `rule_env_var_to_python` method to properly handle Control-M environment variables in Python code, including special handling for variables ending with `_prefix` followed by a period
+6. **Control-M Job Template**: Updated the template to convert Control-M jobs with TASKTYPE="Job" to Airflow SSHOperator with proper f-string formatting for environment variables
+7. **Proxy Configuration**: Enhanced documentation for TELUS network proxy requirements, adding explicit instructions for Cline to run proxy configuration commands when starting a new terminal
+8. **PowerShell Syntax**: Documented PowerShell syntax requirements for Windows environments
+9. **VM Setup Guide**: Created a comprehensive guide for setting up DAGify on a GCP VM
+10. **Airflow Integration**: Fixed Pylance warnings by properly installing Apache Airflow dependencies
+11. **Automic Support**: Initial implementation of support for Automic job definitions
+12. **Web UI Improvements**: Enhanced user experience in the web interface
+13. **Report Generation**: More comprehensive reporting capabilities
+14. **Docker Integration**: Improved containerization for easier deployment
+15. **Documentation**: Better documentation of usage patterns and extension points
 
 ## Current Challenges
 

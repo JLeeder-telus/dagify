@@ -7,6 +7,7 @@ import yaml
 import xml.etree.ElementTree as ET
 from jinja2 import Environment, FileSystemLoader
 import autopep8
+from .post_process_dag import post_process_dag_file
 from .utils import (
     file_exists,
     create_directory,
@@ -215,6 +216,9 @@ def generate_airflow_dags(object, task_name):
         airflow_task_outputs = []
         tasks = []
         schedule_interval = None
+        dag_owner = 'airflow'  # Default owner
+        dag_queue = None  # Default queue (None means no queue will be set)
+        
         for tIdx, task in enumerate(object.uf.get_tasks()):
             # Capture the airflow tasks for each dag divider
             if task.get_attribute(object.dag_divider) == dag_divider_value:
@@ -222,6 +226,31 @@ def generate_airflow_dags(object, task_name):
                 airflow_task_outputs.append(task.get_airflow_task_output())
                 if not schedule_interval:
                     schedule_interval = calculate_cron_schedule(task)
+                # Get the RUN_AS attribute for the DAG owner if not already set
+                if dag_owner == 'airflow' and task.get_attribute('RUN_AS'):
+                    dag_owner = task.get_attribute('RUN_AS')
+                
+                # Get the NODEID attribute for the DAG queue if not already set
+                if dag_queue is None and task.get_attribute('NODEID'):
+                    nodeid = task.get_attribute('NODEID')
+                    # Check if NODEID contains _SVR or _SERVER
+                    if '_SVR' in nodeid or '_SERVER' in nodeid:
+                        # Extract number from NODEID if present
+                        import re
+                        number_match = re.search(r'(\d+)', nodeid)
+                        if number_match:
+                            number = number_match.group(1)
+                            if number == '1' or not number:
+                                dag_queue = 'tol8'
+                            elif number == '2':
+                                dag_queue = 'kidc'
+                            elif number == '9':
+                                dag_queue = 'lidc'
+                            elif number == '8':
+                                dag_queue = 'qidc'
+                        else:
+                            # No number found
+                            dag_queue = 'tol8'
 
         # Calculate DAG Specific Python Imports
         dag_python_imports = object.uf.calculate_dag_python_imports(
@@ -303,11 +332,16 @@ def generate_airflow_dags(object, task_name):
             dependencies_int=dependencies_in_dag_internal,
             dependencies_ext=dependencies_in_dag_external,
             upstream_dependencies=upstream_dependencies,
-            env_vars=unique_env_vars
+            env_vars=unique_env_vars,
+            dag_owner=dag_owner,
+            dag_queue=dag_queue
         )
         with open(filename, mode="w", encoding="utf-8") as dag_file:
             content_linted = autopep8.fix_code(content)
             dag_file.write(content_linted)
+            
+        # Post-process the DAG file to replace Variable.get calls with local variables
+        post_process_dag_file(filename)
 
     return
 
@@ -315,6 +349,7 @@ def set_baseline_imports(object):
     object.baseline_imports = [
         "import os",
         "from airflow import DAG",
+        "from airflow.sdk import Variable",
         "from airflow.decorators import task",
         "from airflow.sensors.external_task import ExternalTaskMarker",
         "from airflow.sensors.external_task import ExternalTaskSensor",
@@ -416,6 +451,25 @@ def airflow_task_build(task, template):
             unique_env_vars.append(var)
             seen_vars.add(var['env_var'])
     task.set_env_vars(unique_env_vars)
+
+    # Special handling for control-m-job-to-airflow-bash template
+    if template["metadata"]["name"] == "control-m-job-to-airflow-bash":
+        # Extract variables from the task
+        parameter_string = ""
+        for variable in task.get_variables():
+            # Skip variables with LIBMEMSYSM in the NAME
+            if variable.get_attribute("NAME") and "LIBMEMSYSM" in variable.get_attribute("NAME"):
+                continue
+                
+            if variable.get_attribute("NAME") and variable.get_attribute("VALUE"):
+                # Get the variable value and replace %% with Variable.get
+                value = variable.get_attribute("VALUE")
+                # Replace %%VAR with Variable.get('VAR')
+                value = re.sub(r'%%([A-Za-z0-9_]+)', r"{Variable.get('\1')}", value)
+                parameter_string += value + " "
+        
+        # Add parameter_string to values
+        values["parameter_string"] = parameter_string.strip()
 
     # Construct Output Python Object Text
     output = template["structure"].format(**values)

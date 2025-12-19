@@ -1,0 +1,130 @@
+import os
+import re
+import sys
+import datetime
+
+def clean_control_m_concat(content):
+    """
+    Clean up Control-M concatenation syntax in the content.
+    
+    In Control-M, a period (.) is used for concatenation, but in Python,
+    we should remove the period. For example:
+    APP_HOME={g_app_home_prefix}.omg/vpop -> APP_HOME={g_app_home_prefix}omg/vpop
+    
+    Args:
+        content: The content to clean up
+        
+    Returns:
+        The cleaned content
+    """
+    # Pattern to match variable references with concatenation
+    pattern = r'(\{[^}]+\})\.([a-zA-Z0-9_/]+)'
+    
+    # Replace with proper Python syntax
+    return re.sub(pattern, r'\1\2', content)
+
+def post_process_dag_file(file_path):
+    """
+    Post-process a DAG file to replace Variable.get calls with local variables.
+    
+    This function:
+    1. Reads the content of a DAG file
+    2. Identifies all Variable.get calls in bash_command strings
+    3. Ensures corresponding variable declarations exist in the variables section
+    4. Replaces Variable.get calls with the local variable references
+    
+    Args:
+        file_path: Path to the DAG file to process
+    """
+    print(f"Post-processing DAG file: {file_path}")
+    
+    # Read the file content
+    with open(file_path, 'r') as f:
+        content = f.read()
+    
+    # Find all Variable.get calls in bash_command strings
+    variable_get_pattern = r"Variable\.get\('([^']+)'\)"
+    matches = re.findall(variable_get_pattern, content)
+    
+    # Get unique variable names
+    unique_vars = set(matches)
+    
+    # Check if we need to make any changes
+    if not unique_vars:
+        print("No Variable.get calls found in bash_command strings. No changes needed.")
+        return
+    
+    # Find the variables section
+    variables_section_pattern = r"(# Get variables from Airflow Variables\s*\n)"
+    variables_section_match = re.search(variables_section_pattern, content)
+    
+    if not variables_section_match:
+        print("Variables section not found. Cannot proceed with post-processing.")
+        return
+    
+    # Check which variables are already declared
+    declared_vars_pattern = r"(\w+) = Variable\.get\(\"([^\"]+)\"\)"
+    declared_vars_matches = re.findall(declared_vars_pattern, content)
+    
+    # Create a mapping of variable names to their Python variable names
+    declared_vars = {var_name: python_var for python_var, var_name in declared_vars_matches}
+    
+    # Add missing variable declarations
+    new_declarations = []
+    for var_name in unique_vars:
+        if var_name not in declared_vars:
+            # Convert to snake_case for Python variable name
+            python_var = var_name.lower()
+            declared_vars[var_name] = python_var
+            new_declarations.append(f"\n    {python_var} = Variable.get(\"{var_name}\")")
+    
+    # Sort the new declarations to ensure consistent ordering
+    new_declarations.sort()
+    
+    if new_declarations:
+        # Insert new declarations after the variables section
+        insert_position = variables_section_match.end()
+        content = content[:insert_position] + "".join(new_declarations) + content[insert_position:]
+    
+    # Special handling for ORDERID - replace with datetime
+    orderid_pattern = r'(\s*orderid = Variable\.get\("ORDERID"\))'
+    orderid_match = re.search(orderid_pattern, content)
+    if orderid_match:
+        # Replace with datetime
+        now_line = '    now = datetime.datetime.now()'
+        orderid_replacement = '    orderid = now.strftime("%Y%m%d%H%M%S")'
+        # Insert the now line before the orderid line
+        content = content.replace(orderid_match.group(1), now_line + '\n' + orderid_replacement + '\n')
+    
+    # Replace Variable.get calls with local variable references
+    for var_name, python_var in declared_vars.items():
+        pattern = r"Variable\.get\('" + var_name + r"'\)"
+        replacement = python_var
+        content = re.sub(pattern, replacement, content)
+    
+    # Fix any formatting issues with variable declarations
+    # Ensure there's a newline between variable declarations
+    content = re.sub(r'(Variable\.get\([^\)]+\))(\s*)(\w+\s*=)', r'\1\n\n    \3', content)
+    
+    # Clean up Control-M concatenation syntax
+    content = clean_control_m_concat(content)
+    
+    # Write the updated content back to the file
+    with open(file_path, 'w') as f:
+        f.write(content)
+    
+    print(f"Successfully post-processed DAG file: {file_path}")
+    print(f"Added {len(new_declarations)} new variable declarations")
+    print(f"Replaced {len(declared_vars)} Variable.get calls with local variable references")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python post_process_dag.py <dag_file_path>")
+        sys.exit(1)
+    
+    file_path = sys.argv[1]
+    if not os.path.exists(file_path):
+        print(f"Error: File {file_path} does not exist")
+        sys.exit(1)
+    
+    post_process_dag_file(file_path)

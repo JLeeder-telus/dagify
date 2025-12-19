@@ -42,6 +42,13 @@ DAGify is currently in a stable, functional state with core capabilities for con
 - [x] **Error Reporting**: Basic error reporting during conversion
 - [x] **Environment Documentation**: Enhanced documentation for proxy settings and PowerShell syntax, including explicit instructions for Cline
 - [x] **VM Setup Guide**: Comprehensive guide for setting up DAGify on a GCP VM
+- [x] **Airflow Variable Integration**: Support for loading g_ variables from Airflow Variable.get() instead of environment variables
+- [x] **Dynamic ORDERID Generation**: Replacement of ORDERID variable with a datetime-based value for better runtime flexibility
+- [x] **Airflow 3.1 Compatibility**: Updated DAG template to use `schedule` instead of `schedule_interval`
+- [x] **Post-Processing Pipeline**: Post-processing script to replace Variable.get() calls with local variable references
+- [x] **Control-M Syntax Cleanup**: Functionality to clean up Control-M concatenation syntax (periods used for concatenation) in the generated DAG files
+- [x] **DAG Owner from RUN_AS**: Setting the DAG owner from the RUN_AS attribute in the Control-M XML file
+- [x] **DAG Queue from NODEID**: Setting the DAG queue based on the NODEID attribute in the Control-M XML file
 
 ## In Progress
 
