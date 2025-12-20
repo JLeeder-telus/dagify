@@ -7,6 +7,31 @@
 {{import}}
 {%- endfor %}
 
+def read_libmemsym_file(file_path, variable_name):
+    """
+    Read a specific variable from a libmemsym file.
+
+    Args:
+        file_path: Path to the libmemsym file
+        variable_name: Name of the variable to retrieve
+
+    Returns:
+        Value of the variable, or None if not found
+    """
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    if key.strip() == variable_name:
+                        return value.strip()
+        print(f"Variable {variable_name} not found in {file_path}")
+        return None
+    except Exception as e:
+        print(f"Error reading libmemsym file {file_path}: {e}")
+        return None
+
 default_args = {
     'owner': '{{ dag_owner }}',
 }
@@ -25,6 +50,14 @@ with DAG(
     {% for var in env_vars %}
     {{ var.python_var }} = Variable.get("{{ var.env_var }}")
     {% endfor %}
+    
+    # Define libmemsym paths for each component that needs them
+    {% if dag_id %}
+    {% set component_name = dag_id.split('-')[-1] %}
+    {% if component_name %}
+    {{ component_name.lower() }}_locals_path = f"{g_libmemsym_prefix}/{g_env}/{{ component_name }}/locals"
+    {% endif %}
+    {% endif %}
 
     # DAG Tasks
     {%- for task in tasks %}
