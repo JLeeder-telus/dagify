@@ -375,6 +375,30 @@ def airflow_task_build(task, template):
     
     # List to store environment variables
     env_vars = []
+    
+    # Set default queue based on NODEID (need to have a default value)
+    values["queue"] = 'tol8'  # Default queue
+    
+    # Override with proper queue based on NODEID if available
+    nodeid = task.get_attribute('NODEID')
+    if nodeid:
+        if '_SVR' in nodeid or '_SERVER' in nodeid:
+            # Extract number from NODEID if present
+            import re
+            number_match = re.search(r'(\d+)', nodeid)
+            if number_match:
+                number = number_match.group(1)
+                if number == '1' or not number:
+                    values["queue"] = 'tol8'
+                elif number == '2':
+                    values["queue"] = 'kidc'
+                elif number == '9':
+                    values["queue"] = 'lidc'
+                elif number == '8':
+                    values["queue"] = 'qidc'
+            else:
+                # No number found
+                values["queue"] = 'tol8'
 
     # Process each Mapping
     for mapping in template["mappings"]:

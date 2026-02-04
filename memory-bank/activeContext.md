@@ -20,7 +20,8 @@ Recent development has focused on:
 4. **Post-Processing Pipeline**: Created a post-processing script to replace Variable.get() calls with local variable references in bash_command strings, improving code readability and performance
 5. **Control-M Syntax Cleanup**: Added functionality to clean up Control-M concatenation syntax (periods used for concatenation) in the generated DAG files, ensuring proper Python syntax
 6. **DAG Owner from RUN_AS**: Added functionality to set the DAG owner from the RUN_AS attribute in the Control-M XML file, ensuring proper ownership in Airflow
-7. **DAG Queue from NODEID**: Added functionality to set the DAG queue based on the NODEID attribute in the Control-M XML file, with specific mapping rules for different server types
+7. **Operator-Level Queue Settings**: Improved queue mapping by moving queue settings from DAG-level to operator-level, allowing different tasks within the same DAG to use different queues
+8. **Server-Based Queue Mapping**: Enhanced the queue mapping logic to intelligently assign queue values based on server numbers in NODEID (e.g., "OMG_BATCH2_SVR" maps to "kidc" queue due to the number "2"), ensuring proper workload distribution
 5. **Environment Variable Handling**: Enhanced the `rule_env_var_to_python` method to properly handle Control-M environment variables in Python code, including special handling for variables ending with `_prefix` followed by a period
 6. **Control-M Job Template**: Updated the template to convert Control-M jobs with TASKTYPE="Job" to Airflow SSHOperator with proper f-string formatting for environment variables
 7. **Proxy Configuration**: Enhanced documentation for TELUS network proxy requirements, adding explicit instructions for Cline to run proxy configuration commands when starting a new terminal

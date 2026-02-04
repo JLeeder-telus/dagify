@@ -53,10 +53,16 @@ mappings:
     rules:
       - rule: escape_quotes
       - rule: env_var_to_python
+  - source: RUN_AS
+    target: run_as_user
+    rules:
+      - rule: escape_quotes
+  # Queue is set directly in the engine.py based on the NODEID value
 structure: |
   {task_id} = BashOperator(
     task_id="{task_id}",
-    bash_command=f"{command}",
+    bash_command=f"sudo -u {run_as_user} -i {command}",
     trigger_rule="{trigger_rule}",
+    queue="{queue}",
     dag=dag,
   )

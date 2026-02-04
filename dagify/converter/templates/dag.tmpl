@@ -43,7 +43,6 @@ with DAG(
     {% if schedule_interval %}schedule="{{ schedule_interval }}",{% else %}schedule="@daily",  # TIMEFROM not found, default schedule set to @daily{% endif %}
     catchup=False,
     {% if dag_id %}tags=[{% for tag in dag_id.lower().split('-') %}'{{ tag }}'{% if not loop.last %}, {% endif %}{% endfor %}],{% endif %}
-    {% if dag_queue %}queue="{{ dag_queue }}",{% endif %}
 ) as dag:
 
     # Get variables from Airflow Variables

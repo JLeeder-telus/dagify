@@ -48,7 +48,9 @@ DAGify is currently in a stable, functional state with core capabilities for con
 - [x] **Post-Processing Pipeline**: Post-processing script to replace Variable.get() calls with local variable references
 - [x] **Control-M Syntax Cleanup**: Functionality to clean up Control-M concatenation syntax (periods used for concatenation) in the generated DAG files
 - [x] **DAG Owner from RUN_AS**: Setting the DAG owner from the RUN_AS attribute in the Control-M XML file
-- [x] **DAG Queue from NODEID**: Setting the DAG queue based on the NODEID attribute in the Control-M XML file
+- [x] **BashOperator run_as_user**: Adding run_as_user parameter to BashOperator from the RUN_AS attribute in the Control-M XML file
+- [x] **Operator-Level Queue**: Setting the queue at the operator level based on NODEID attribute, allowing for different queue settings within the same DAG
+- [x] **Server-Based Queue Mapping**: Intelligent queue assignment based on server number in NODEID (e.g., NODEID="OMG_BATCH2_SVR" → queue="kidc")
 
 ## In Progress
 

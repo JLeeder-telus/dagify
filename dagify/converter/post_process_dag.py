@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import datetime
+import json
 
 def clean_control_m_concat(content):
     """
@@ -23,6 +24,50 @@ def clean_control_m_concat(content):
     # Replace with proper Python syntax
     return re.sub(pattern, r'\1\2', content)
 
+def generate_libmemsym_code(content):
+    """
+    Generate code to read variables from the libmemsym file.
+    
+    Args:
+        content: The content of the DAG file
+        
+    Returns:
+        Tuple containing:
+        - A string with code to be inserted after variables section
+        - List of L_ variables that should be read from the libmemsym file
+    """
+    # Find the component name and locals path
+    locals_path_pattern = r"(\w+)_locals_path = f\"(.+)\""
+    locals_path_match = re.search(locals_path_pattern, content)
+    
+    if not locals_path_match:
+        print("No locals_path found in the DAG file.")
+        return "", []
+    
+    component_name = locals_path_match.group(1)
+    
+    # Find all L_ variables
+    l_var_pattern = r"l_(\w+) = Variable\.get\(\"L_([^\"]+)\"\)"
+    l_var_matches = re.findall(l_var_pattern, content)
+    
+    if not l_var_matches:
+        print("No L_ variables found in the DAG file.")
+        return "", []
+    
+    # Generate code to read each L_ variable from the libmemsym file
+    code_lines = [
+        f"\n    # Read L_ variables from the {component_name} locals file",
+        f"    print(f\"Reading variables from {{{{ {component_name}_locals_path }}}}\") "
+    ]
+    
+    l_vars = []
+    for python_var, env_var in l_var_matches:
+        l_vars.append(f"L_{env_var}")
+        code_line = f"    l_{python_var} = read_libmemsym_file({component_name}_locals_path, \"L_{env_var}\") or l_{python_var}"
+        code_lines.append(code_line)
+    
+    return "\n".join(code_lines), l_vars
+
 def post_process_dag_file(file_path):
     """
     Post-process a DAG file to replace Variable.get calls with local variables.
@@ -32,6 +77,7 @@ def post_process_dag_file(file_path):
     2. Identifies all Variable.get calls in bash_command strings
     3. Ensures corresponding variable declarations exist in the variables section
     4. Replaces Variable.get calls with the local variable references
+    5. Adds code to read L_ variables from the libmemsym file
     
     Args:
         file_path: Path to the DAG file to process
@@ -109,6 +155,19 @@ def post_process_dag_file(file_path):
     # Clean up Control-M concatenation syntax
     content = clean_control_m_concat(content)
     
+    # Generate code to read variables from the libmemsym file
+    libmemsym_code, l_vars = generate_libmemsym_code(content)
+    
+    if libmemsym_code:
+        # Find the position to insert the libmemsym code
+        # Insert after the component locals path declaration
+        component_locals_path_pattern = r"(\w+)_locals_path = f\"(.+)\"\n"
+        component_locals_path_match = re.search(component_locals_path_pattern, content)
+        
+        if component_locals_path_match:
+            insert_position = component_locals_path_match.end()
+            content = content[:insert_position] + "\n" + libmemsym_code + content[insert_position:]
+    
     # Write the updated content back to the file
     with open(file_path, 'w') as f:
         f.write(content)
@@ -116,6 +175,8 @@ def post_process_dag_file(file_path):
     print(f"Successfully post-processed DAG file: {file_path}")
     print(f"Added {len(new_declarations)} new variable declarations")
     print(f"Replaced {len(declared_vars)} Variable.get calls with local variable references")
+    if l_vars:
+        print(f"Added code to read {len(l_vars)} variables from libmemsym file")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

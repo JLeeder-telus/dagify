@@ -256,3 +256,5 @@ uvicorn app:app --reload
 
 </br>
 
+## TELUS Testing
+$env:HTTPS_PROXY="http://webproxystatic-on.tsl.telus.com:8080"; $env:HTTP_PROXY="http://webproxystatic-on.tsl.telus.com:8080"; python DAGify.py --source-path telus_data/BIL-EXF.DRF.xml --output-path telus_data/output -d SUB_APPLICATION
