@@ -51,6 +51,9 @@ DAGify is currently in a stable, functional state with core capabilities for con
 - [x] **BashOperator run_as_user**: Adding run_as_user parameter to BashOperator from the RUN_AS attribute in the Control-M XML file
 - [x] **Operator-Level Queue**: Setting the queue at the operator level based on NODEID attribute, allowing for different queue settings within the same DAG
 - [x] **Server-Based Queue Mapping**: Intelligent queue assignment based on server number in NODEID (e.g., NODEID="OMG_BATCH2_SVR" → queue="kidc")
+- [x] **L_ Variable Source Control**: Enhanced L_ variable handling to source exclusively from libmemsym files rather than Airflow Variables
+- [x] **LibMemSym File Format Support**: Enhanced the `read_libmemsym_file` function to handle variable names with double percent sign (%%) prefixes (e.g., %%L_GCP_UID=value) in TELUS-specific libmemsym files
+- [x] **telus_data File Protection**: Added file access restrictions to prevent editing of files in the telus_data directory, preserving source file integrity
 
 ## In Progress
 

@@ -24,6 +24,7 @@ def read_libmemsym_file(file_path, variable_name):
                 line = line.strip()
                 if line and not line.startswith('#') and '=' in line:
                     key, value = line.split('=', 1)
+                    key = key.strip().lstrip('%')  # Strip leading % characters
                     if key.strip() == variable_name:
                         return value.strip()
         print(f"Variable {variable_name} not found in {file_path}")
@@ -33,7 +34,7 @@ def read_libmemsym_file(file_path, variable_name):
         return None
 
 default_args = {
-    'owner': '{{ dag_owner }}',
+    'owner': 'jeremy_leeder',
 }
 
 with DAG(
@@ -51,7 +52,11 @@ with DAG(
     {% endfor %}
     
     # Define libmemsym paths for each component that needs them
-    {% if dag_id %}
+    {% if app_id %}
+    {# Use the application ID extracted from LIBMEMSYM #}
+    {{ dag_id.split('-')[-1].lower() }}_locals_path = f"{g_libmemsym_prefix}/{g_env}/{{ app_id }}/locals"
+    {% elif dag_id %}
+    {# Fall back to extracting from DAG ID #}
     {% set component_name = dag_id.split('-')[-1] %}
     {% if component_name %}
     {{ component_name.lower() }}_locals_path = f"{g_libmemsym_prefix}/{g_env}/{{ component_name }}/locals"

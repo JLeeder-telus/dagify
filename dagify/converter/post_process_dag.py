@@ -4,6 +4,32 @@ import sys
 import datetime
 import json
 
+def read_libmemsym_file(file_path, variable_name):
+    """
+    Read a specific variable from a libmemsym file.
+
+    Args:
+        file_path: Path to the libmemsym file
+        variable_name: Name of the variable to retrieve
+
+    Returns:
+        Value of the variable, or None if not found
+    """
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip().lstrip('%')  # Strip leading % characters
+                    if key.strip() == variable_name:
+                        return value.strip()
+        print(f"Variable {variable_name} not found in {file_path}")
+        return None
+    except Exception as e:
+        print(f"Error reading libmemsym file {file_path}: {e}")
+        return None
+
 def clean_control_m_concat(content):
     """
     Clean up Control-M concatenation syntax in the content.
@@ -35,6 +61,7 @@ def generate_libmemsym_code(content):
         Tuple containing:
         - A string with code to be inserted after variables section
         - List of L_ variables that should be read from the libmemsym file
+        - Dictionary mapping each L_ variable Python name to its environment variable name
     """
     # Find the component name and locals path
     locals_path_pattern = r"(\w+)_locals_path = f\"(.+)\""
@@ -42,17 +69,23 @@ def generate_libmemsym_code(content):
     
     if not locals_path_match:
         print("No locals_path found in the DAG file.")
-        return "", []
+        return "", [], {}
     
     component_name = locals_path_match.group(1)
     
-    # Find all L_ variables
-    l_var_pattern = r"l_(\w+) = Variable\.get\(\"L_([^\"]+)\"\)"
-    l_var_matches = re.findall(l_var_pattern, content)
+    # Find all L_ variables - both those using Variable.get() and those already set to None
+    l_var_pattern_get = r"l_(\w+) = Variable\.get\(\"L_([^\"]+)\"\)"
+    l_var_pattern_none = r"l_(\w+) = None\s+"
+    
+    l_var_matches_get = re.findall(l_var_pattern_get, content)
+    l_var_matches_none = re.findall(l_var_pattern_none, content)
+    
+    # Combine matches, assuming the variable name is the same as the environment variable name for None-initialized variables
+    l_var_matches = l_var_matches_get + [(var, var.upper()) for var in l_var_matches_none]
     
     if not l_var_matches:
         print("No L_ variables found in the DAG file.")
-        return "", []
+        return "", [], {}
     
     # Generate code to read each L_ variable from the libmemsym file
     code_lines = [
@@ -61,12 +94,42 @@ def generate_libmemsym_code(content):
     ]
     
     l_vars = []
+    l_var_mapping = {}
+    
     for python_var, env_var in l_var_matches:
         l_vars.append(f"L_{env_var}")
+        l_var_mapping[f"l_{python_var}"] = f"L_{env_var}"
         code_line = f"    l_{python_var} = read_libmemsym_file({component_name}_locals_path, \"L_{env_var}\") or l_{python_var}"
         code_lines.append(code_line)
     
-    return "\n".join(code_lines), l_vars
+    return "\n".join(code_lines), l_vars, l_var_mapping
+
+def remove_libmemsym_from_bash_commands(content):
+    """
+    Remove libmemsym references from BashOperator bash_command strings.
+    
+    This function finds all instances of {g_libmemsym_prefix}/{g_env}/VPOPBatch/locals
+    in bash_command strings and removes them.
+    
+    Args:
+        content: The content of the DAG file
+        
+    Returns:
+        The cleaned content with libmemsym references removed
+    """
+    # Pattern to match libmemsym references in bash_command strings
+    pattern = r'(bash_command=f".*?)(\{g_libmemsym_prefix\}/\{g_env\}/\w+/locals)(\s+)'
+    
+    # Replace with just a space
+    modified_content = re.sub(pattern, r'\1\3', content)
+    
+    # Count replacements
+    count = content.count('{g_libmemsym_prefix}/{g_env}') - modified_content.count('{g_libmemsym_prefix}/{g_env}')
+    
+    if count > 0:
+        print(f"Removed {count} libmemsym references from bash_command strings")
+    
+    return modified_content
 
 def post_process_dag_file(file_path):
     """
@@ -78,6 +141,7 @@ def post_process_dag_file(file_path):
     3. Ensures corresponding variable declarations exist in the variables section
     4. Replaces Variable.get calls with the local variable references
     5. Adds code to read L_ variables from the libmemsym file
+    6. Removes libmemsym references from BashOperator bash_command strings
     
     Args:
         file_path: Path to the DAG file to process
@@ -95,9 +159,13 @@ def post_process_dag_file(file_path):
     # Get unique variable names
     unique_vars = set(matches)
     
+    # Find L_ variables
+    l_var_pattern = r"l_\w+ = Variable\.get\(\"L_[^\"]+\"\)"
+    has_l_vars = bool(re.search(l_var_pattern, content))
+    
     # Check if we need to make any changes
-    if not unique_vars:
-        print("No Variable.get calls found in bash_command strings. No changes needed.")
+    if not unique_vars and not has_l_vars:
+        print("No Variable.get calls found in bash_command strings or L_ variables. No changes needed.")
         return
     
     # Find the variables section
@@ -155,8 +223,17 @@ def post_process_dag_file(file_path):
     # Clean up Control-M concatenation syntax
     content = clean_control_m_concat(content)
     
+    # Remove libmemsym references from bash_command strings
+    content = remove_libmemsym_from_bash_commands(content)
+    
+    # Replace L_ variables with None
+    l_var_pattern = r"(l_\w+) = Variable\.get\(\"(L_[^\"]+)\"\)"
+    l_var_replacements = re.findall(l_var_pattern, content)
+    replaced_l_vars_count = len(l_var_replacements)
+    content = re.sub(l_var_pattern, r"\1 = None", content)
+    
     # Generate code to read variables from the libmemsym file
-    libmemsym_code, l_vars = generate_libmemsym_code(content)
+    libmemsym_code, l_vars, l_var_mapping = generate_libmemsym_code(content)
     
     if libmemsym_code:
         # Find the position to insert the libmemsym code
@@ -175,6 +252,8 @@ def post_process_dag_file(file_path):
     print(f"Successfully post-processed DAG file: {file_path}")
     print(f"Added {len(new_declarations)} new variable declarations")
     print(f"Replaced {len(declared_vars)} Variable.get calls with local variable references")
+    if replaced_l_vars_count > 0:
+        print(f"Replaced {replaced_l_vars_count} L_ variables with None")
     if l_vars:
         print(f"Added code to read {len(l_vars)} variables from libmemsym file")
 

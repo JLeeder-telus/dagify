@@ -1,6 +1,6 @@
 import os
 import random
-import re
+import re  # Used for regex pattern matching
 import yamale
 from .yaml_validator.custom_validator import validators
 import yaml
@@ -296,6 +296,21 @@ def generate_airflow_dags(object, task_name):
                             "sensor_name": ext_dep + "_sensor_" + ''.join(random.choices('0123456789abcdef', k=4))
                         })
 
+        # Extract app ID from LIBMEMSYM variable
+        app_id = None
+        for task in object.uf.get_tasks():
+            if task.get_attribute(object.dag_divider) == dag_divider_value:
+                for variable in task.get_variables():
+                    if variable.get_attribute("NAME") == "%%LIBMEMSYM":
+                        libmemsym_value = variable.get_attribute("VALUE")
+                        # Extract app ID using regex
+                        match = re.search(r'%%G_LIBMEMSYM_PREFIX/%%G_ENV/([^/]+)/locals', libmemsym_value)
+                        if match:
+                            app_id = match.group(1)
+                            break
+                if app_id:
+                    break
+
         # Get DAG Template
         environment = Environment(
             loader=FileSystemLoader("./dagify/converter/templates/"))
@@ -334,7 +349,8 @@ def generate_airflow_dags(object, task_name):
             upstream_dependencies=upstream_dependencies,
             env_vars=unique_env_vars,
             dag_owner=dag_owner,
-            dag_queue=dag_queue
+            dag_queue=dag_queue,
+            app_id=app_id
         )
         with open(filename, mode="w", encoding="utf-8") as dag_file:
             content_linted = autopep8.fix_code(content)
